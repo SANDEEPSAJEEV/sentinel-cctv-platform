@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sentinel Registry</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <div class="brand">
+    <span class="mark">SENTINEL</span>
+    <span class="sub">Centralised CCTV Registry &amp; GIS · Model 1</span>
+  </div>
+  <div id="stats" class="stats"></div>
+</header>
+
+<main>
+  <aside class="panel filters">
+    <h2>Filter</h2>
+    <label>Search <input id="f-q" type="search" placeholder="name, code, district"></label>
+    <label>Department <select id="f-department"></select></label>
+    <label>Capability <select id="f-grade"></select></label>
+    <label>Status <select id="f-status"></select></label>
+    <label>Location quality <select id="f-confidence"></select></label>
+    <label>Owner <select id="f-owner"></select></label>
+    <button id="f-reset" type="button">Reset</button>
+
+    <h2>Cameras <span id="count" class="count"></span></h2>
+    <ul id="list" class="list"></ul>
+  </aside>
+
+  <section class="map-wrap">
+    <div class="map-head">
+      <div class="legend" id="legend"></div>
+      <div class="map-note" id="map-note"></div>
+    </div>
+    <svg id="map" role="img" aria-label="Camera locations across Gujarat"></svg>
+    <div class="unmapped">
+      <strong id="unmapped-count"></strong>
+      <span>cameras have no confirmed location. They are onboarding tasks, listed in the worklist.</span>
+      <button id="show-worklist" type="button">Open worklist</button>
+    </div>
+  </section>
+
+  <aside class="panel detail" id="detail">
+    <h2>Camera</h2>
+    <p class="muted">Select a camera on the map or in the list.</p>
+  </aside>
+</main>
+
+<dialog id="worklist-dialog">
+  <h2>Onboarding worklist</h2>
+  <p class="muted">What the registry does not yet know. This is the gap-analysis
+     report Model 1 asks for, and the agenda for the department questionnaire.</p>
+  <div id="worklist-body"></div>
+  <form method="dialog"><button>Close</button></form>
+</dialog>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

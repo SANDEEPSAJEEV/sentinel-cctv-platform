@@ -1,4 +1,26 @@
 services:
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: sentinel-postgis
+    environment:
+      POSTGRES_USER: sentinel
+      # Local sandbox credential. In deployment this comes from the environment
+      # or a secret store — never from a file in the repo.
+      POSTGRES_PASSWORD: ${SENTINEL_DB_PASSWORD:-sentinel_local_dev}
+      POSTGRES_DB: sentinel
+    ports:
+      # 55432, not 5432: a local Postgres already owns 5432 on the dev machine.
+      - "127.0.0.1:55432:5432"     # localhost only
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./registry/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sentinel -d sentinel"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   mediamtx:
     image: bluenviron/mediamtx:latest
     container_name: sentinel-mediamtx
@@ -23,3 +45,6 @@ services:
     environment:
       - RTSP_HOST=mediamtx
     restart: unless-stopped
+
+volumes:
+  pgdata:

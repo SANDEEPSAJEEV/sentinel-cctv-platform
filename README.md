@@ -87,6 +87,48 @@ If 8554 is blocked on your network the probe says so and falls back to HLS.
 HLS delivers in segments, so PTS granularity is coarser and latency higher —
 keep every time-derived metric on PTS regardless.
 
+## Registry + GIS (Model 1)
+
+Metadata only — no video, and no credential, ever. Cameras carry a catalogue
+key, never a URL with an embedded password.
+
+```bash
+docker compose up -d postgis                       # PostGIS on 127.0.0.1:55432
+python -m registry.seed --catalogue                # 30 cameras from the grid catalogue
+python -m registry.seed --capability capability_report.json
+uvicorn registry.api:app --port 8090               # UI + API on http://127.0.0.1:8090
+```
+
+What it models that a camera list usually doesn't:
+
+- **Analog cameras hang off a node.** A DVR / NVR / encoder is its own row with
+  its channel count, and the database refuses an analog camera without one.
+- **Private cameras need consent.** `owner_type='private'` without a
+  `consent_ref` is rejected by a check constraint, not by a hopeful UI check,
+  and consent has an expiry that shows up on the worklist before it lapses.
+- **A location is a claim until surveyed.** `location_confidence` is one of
+  surveyed / approx_area / approx_city / unknown. The grid catalogue ships no
+  coordinates at all, so every point here is derived from the camera's name and
+  labelled accordingly — 6 of 30 could not be placed at all.
+- **A capability grade is a claim until a human looks.** The plate detector
+  fires on signage, taillights and on-screen timestamps, so `evidence_verified`
+  stays false until somebody checks the crops.
+- **Every read is purpose-bound.** Send `X-Purpose-Ref: <FIR/DD number>`; it
+  lands in `audit_log` with the rows returned.
+
+Onboarding has three doors: `POST /api/cameras` (one, from the form),
+`POST /api/cameras/bulk` (a department's CSV — see
+`registry/samples/private_cameras.csv`), and `POST /api/capability`
+(a `capability_report.json` from the profiler).
+
+`GET /api/worklist` is the gap-analysis report Model 1 asks for: what is
+missing, per camera, as a list somebody can work through.
+
+The map deliberately ships **no basemap tiles**: OSM's public tile servers
+forbid this kind of load and police networks are egress-restricted, so it
+renders offline from a plain SVG projection. Self-hosted tiles drop in behind
+the markers without touching the rest of the UI.
+
 ## Pre-submission checklist (from the organiser's Resources page)
 
 - [x] Every client forces RTSP over TCP

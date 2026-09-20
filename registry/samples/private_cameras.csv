@@ -1,0 +1,4 @@
+code,external_ref,name,department_code,owner_type,signal_type,camera_type,lat,lon,location_confidence,location_source,district,address,public_facing,consent_ref,consent_expires_on,heading_deg,fov_deg,mount_height_m,view_kind,node_code
+GJ-AHM-PVT0001,SOC-PRL-01,Prerna Society main gate,POLICE,private,ip,bullet,23.0245,72.5540,surveyed,site survey 2026-09-20,Ahmedabad,"Prerna Society, Ambawadi",true,MOU/AHM/2026/0142,2027-03-31,95,72,3.5,entry,
+GJ-AHM-PVT0002,MALL-IS-07,Iscon mall north approach,POLICE,private,ip,anpr,23.0280,72.5070,surveyed,site survey 2026-09-20,Ahmedabad,"Iscon Mall, SG Highway",true,MOU/AHM/2026/0143,2027-03-31,210,45,4.2,lane,
+GJ-RAJ-PVT0003,SHOP-RJK-02,Kalavad road shopfront,POLICE,private,analog,fixed,22.2790,70.7620,approx_area,shopkeeper sketch,Rajkot,"Kalavad Road",true,MOU/RJK/2026/0088,2026-12-31,15,60,2.8,corridor,DVR-RJK-SHOP-01

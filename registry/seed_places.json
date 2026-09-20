@@ -1,0 +1,48 @@
+{
+  "_comment": [
+    "Locations derived from the camera NAMES in the grid catalogue, which carries",
+    "no coordinates. Nothing here is surveyed. confidence is the honest claim:",
+    "  approx_area  - the named junction/landmark is identifiable, point is within ~500 m",
+    "  approx_city  - only the town/city is identifiable, point is the town centre",
+    "  unknown      - the name does not identify a place; no point is stored",
+    "Every one of these is an onboarding task: the department confirms or corrects",
+    "the point, and location_confidence becomes 'surveyed'. The unknowns are the",
+    "gap-analysis worklist, not a failure to hide."
+  ],
+  "places": {
+    "cam01": {"district": "Ahmedabad", "lat": 23.0300, "lon": 72.5600, "confidence": "approx_city", "source": "name: Chimanbhai bridge, Ahmedabad"},
+    "cam02": {"district": "Ahmedabad", "lat": 23.0300, "lon": 72.5700, "confidence": "approx_city", "source": "name: Janpath; city inferred from the surrounding Ahmedabad cameras"},
+    "cam03": {"district": "Ahmedabad", "lat": 23.1100, "lon": 72.5850, "confidence": "approx_city", "source": "name: O.N.G.C. office, Chandkheda"},
+    "cam04": {"district": "Ahmedabad", "lat": 23.0130, "lon": 72.5610, "confidence": "approx_area", "source": "name: Paldi circle"},
+    "cam05": {"district": "Ahmedabad", "lat": 23.1105, "lon": 72.5860, "confidence": "approx_area", "source": "name: Visat teen rasta"},
+    "cam06": {"district": "Junagadh", "lat": 21.5120, "lon": 70.4580, "confidence": "approx_area", "source": "name: Timbavadi gate, Junagadh"},
+    "cam07": {"district": "Gir Somnath", "lat": 20.9100, "lon": 70.3670, "confidence": "approx_city", "source": "name: gir-somnath; point is Veraval"},
+    "cam08": {"district": "Junagadh", "lat": 21.5170, "lon": 70.4600, "confidence": "approx_area", "source": "name: majewadi gate, Junagadh"},
+    "cam09": {"district": "Junagadh", "lat": 21.5300, "lon": 70.4400, "confidence": "approx_city", "source": "name: new bypass circle, Junagadh"},
+    "cam10": {"district": "Junagadh", "lat": 21.5220, "lon": 70.4570, "confidence": "approx_city", "source": "name: char chowk road, Junagadh"},
+    "cam11": {"district": "Junagadh", "lat": 21.4780, "lon": 70.4810, "confidence": "approx_area", "source": "name: Dolatpara, Junagadh"},
+    "cam12": {"district": "Gandhinagar", "lat": 23.1645, "lon": 72.5760, "confidence": "approx_area", "source": "name: Tri Mandir Adalaj tollnaka"},
+    "cam13": {"district": "Ahmedabad", "lat": 23.0245, "lon": 72.5540, "confidence": "approx_area", "source": "name: C.N. Vidyalaya, Ambawadi"},
+    "cam14": {"district": "Ahmedabad", "lat": 23.0300, "lon": 72.5700, "confidence": "approx_city", "source": "name: Delight RLVD; RLVD = red-light violation detection, junction not identified"},
+    "cam15": {"district": null, "lat": null, "lon": null, "confidence": "unknown", "source": "name: Suvidha park — not resolvable to a place"},
+    "cam16": {"district": "Ahmedabad", "lat": 23.1105, "lon": 72.5860, "confidence": "approx_area", "source": "name: Visat P2; same junction as cam05"},
+    "cam17": {"district": "Rajkot", "lat": 22.2966, "lon": 70.7989, "confidence": "approx_city", "source": "name: Rajkot bus port"},
+    "cam18": {"district": "Rajkot", "lat": 22.3039, "lon": 70.8022, "confidence": "approx_city", "source": "name: Rajkot"},
+    "cam19": {"district": "Navsari", "lat": 20.8200, "lon": 72.9900, "confidence": "approx_city", "source": "name: Khaparia gram panchayat, taluka Gandevi, district Navsari"},
+    "cam20": {"district": null, "lat": null, "lon": null, "confidence": "unknown", "source": "name: Mohanpura — several places share this name"},
+    "cam21": {"district": "Patan", "lat": 23.8500, "lon": 72.1300, "confidence": "approx_city", "source": "name: Patan Dethali char rasta"},
+    "cam22": {"district": "Banaskantha", "lat": null, "lon": null, "confidence": "unknown", "source": "name: BK Mervada tran rasta; BK read as Banaskantha, junction not located"},
+    "cam23": {"district": null, "lat": null, "lon": null, "confidence": "unknown", "source": "name: kheram — not resolvable"},
+    "cam24": {"district": "Gandhinagar", "lat": 23.1690, "lon": 72.8210, "confidence": "approx_city", "source": "name: Dehgam"},
+    "cam25": {"district": null, "lat": null, "lon": null, "confidence": "unknown", "source": "name: dhanori — several places share this name"},
+    "cam26": {"district": null, "lat": null, "lon": null, "confidence": "unknown", "source": "name: TANKAL — not resolvable"},
+    "cam27": {"district": "Navsari", "lat": 20.7700, "lon": 72.9600, "confidence": "approx_city", "source": "name: Bilimora"},
+    "cam28": {"district": "Navsari", "lat": 20.7700, "lon": 72.9600, "confidence": "approx_city", "source": "name: Bilimora"},
+    "cam29": {"district": "Navsari", "lat": 20.7700, "lon": 72.9600, "confidence": "approx_city", "source": "name: Bilimora"},
+    "cam30": {"district": "Kutch", "lat": 23.0800, "lon": 70.1330, "confidence": "approx_city", "source": "name: Gandhidham Rambaugh"}
+  },
+  "departments": {
+    "_comment": "The catalogue does not say which department owns which camera. Only cam19 names one. Everything else is UNASSIGNED until the department questionnaire comes back — that worklist is the point, not a gap to paper over.",
+    "cam19": "PANCHAYAT"
+  }
+}
