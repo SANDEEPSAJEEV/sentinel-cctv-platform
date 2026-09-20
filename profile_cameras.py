@@ -71,6 +71,7 @@ from typing import Any
 import cv2
 import numpy as np
 
+from anpr.quality import FrameGate
 from sentinel_auth import camera_id_of, redact
 from sentinel_client import SentinelCapture, catalogue, rtsp_url_of
 
@@ -247,6 +248,7 @@ def profile_camera(
     width = height = 0
     frames = realtime_frames = frames_analysed = 0
     last_sample_t = float("-inf")
+    gate = FrameGate()
     first_frame_pts: float | None = None
     first_realtime_pts: float | None = None
     info: dict[str, Any] = {}
@@ -293,6 +295,17 @@ def profile_camera(
             if t_ms - last_sample_t < sample_ms:
                 continue
             last_sample_t = t_ms
+
+            # Stream health (fps, gaps) counts every delivered frame, but image
+            # measurements must not: a decoder that lost sync emits grey smears
+            # that depress luminance and focus and hide plates entirely. On the
+            # real grid this was 17-75% of frames on an H.265 camera.
+            good, _ = gate.check(f.image)
+            if not good:
+                if gate.corrupt_streak >= 75:
+                    cap.request_reconnect(f"{gate.corrupt_streak} corrupt frames")
+                    gate.reset()
+                continue
             frames_analysed += 1
 
             height, width = f.image.shape[:2]
@@ -317,6 +330,7 @@ def profile_camera(
         result["decode_warnings"] = cap.decode_warnings
         result["codec"] = info.get("codec")
         result["declared_fps"] = info.get("declared_fps")
+        result.update(gate.stats())
 
     if frames == 0:
         result["error"] = "no frames received"
@@ -413,6 +427,14 @@ def remediation(report: list[dict[str, Any]]) -> list[dict[str, Any]]:
             continue
         grade = cam.get("capability_grade")
         d = cam.get("pixel_density_px_per_m")
+        # A camera whose stream arrives broken is not an optics problem, and
+        # re-lensing it would fix nothing. Say so before grading it.
+        if (cam.get("corrupt_fraction") or 0) >= 0.3:
+            actions.append({"id": cam["id"], "action": "FIX_STREAM",
+                            "reason": f"{cam['corrupt_fraction']:.0%} of frames decoded corrupt "
+                                      f"(longest run {cam.get('longest_corrupt_streak')} frames) — "
+                                      "encoder, keyframe interval or packet loss, not optics"})
+            continue
         if grade == "IDENTIFY":
             continue
         if grade == "UNGRADED":

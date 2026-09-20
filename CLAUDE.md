@@ -141,6 +141,7 @@ streams by a Python middleware. Consistent and repeatable by design.
 | Per-client stream copies | Opening all 30 saturates you and the gateway | Profile sequentially; close captures |
 | **Don't publish to the gateway** | — | Consume only. Never call their control API. |
 | **Watch-time quota** *(unstated — found on first run)* | ~29 min cumulative → 403 on web, 401 on RTSP until cooldown | `WatchQuotaExceeded`; profiler aborts the sweep instead of retrying |
+| **Corrupt frames that decode "successfully"** *(unstated — found 2026-09-20)* | H.265 joins mid-GOP and keeps emitting grey smears. OpenCV reports them as good reads. RF-DETR called an empty road "potted plant / airplane / boat", and plate detection found nothing at all | `anpr.quality.FrameGate` rejects them on saturation + flat-block fraction against the camera's own baseline; `SentinelCapture.request_reconnect()` rejoins when corruption persists (a desynced decoder never recovers on its own) |
 
 **The one they don't state:** because footage loops, the designated vehicle
 repeats the same journey every cycle. Naive route reconstruction reports it
@@ -385,6 +386,19 @@ literal definition of ANPR capability and reuses the step-4 stack.
       throttling; unknown which.
 - [x] **GPS per camera?** No. Locations must be geocoded from names and
       confirmed at registry onboarding (Model 1 manual/bulk path).
+- [!] **Frame corruption invalidates part of the first sweep.** cam06 is H.265
+      and, joined mid-GOP, produced **75% corrupt frames over 60 s** — grey
+      smears that decode without error. Those frames depress luminance and
+      focus scores and hide plates, so some cameras graded "no plates in view"
+      may have been broken streams rather than poor optics. The profiler now
+      gates on frame integrity and reports `corrupt_fraction`; remediation
+      calls that `FIX_STREAM`, not `RE_LENS`. **Re-sweep before quoting grid
+      capability numbers.** With rejoin-on-corruption, cam06 yields ~17%
+      corrupt and usable footage in 3–7 s bursts between rejoins.
+- [!] **Camera names may not match the site.** cam06's on-screen overlay reads
+      "Madhuram Bypass Road Fix-2 (From Aksharvadi)", while the catalogue calls
+      it "06 Timbavadi gate-Junagadh". Treat catalogue names as labels, not
+      locations — another reason location_confidence exists in the registry.
 
 **Also measured:**
 - **GOP replay is real:** every connect delivers ~19 frames within ~100 ms,

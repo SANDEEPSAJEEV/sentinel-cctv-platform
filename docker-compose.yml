@@ -21,6 +21,16 @@ services:
       retries: 10
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    container_name: sentinel-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:6379:6379"     # localhost only
+    volumes:
+      - redisdata:/data
+    restart: unless-stopped
+
   mediamtx:
     image: bluenviron/mediamtx:latest
     container_name: sentinel-mediamtx
@@ -48,3 +58,4 @@ services:
 
 volumes:
   pgdata:
+  redisdata:

@@ -153,6 +153,56 @@ CREATE TABLE IF NOT EXISTS capability_run (
 CREATE INDEX IF NOT EXISTS capability_run_camera_idx
     ON capability_run (camera_id, observed_at DESC);
 
+-- -------------------------------------------------------- vehicle_track
+-- One row per tracked vehicle on one camera, from the ANPR worker. This is
+-- metadata: a box path and a time span, never a frame of video.
+CREATE TABLE IF NOT EXISTS vehicle_track (
+    id              bigserial PRIMARY KEY,
+    camera_id       integer NOT NULL REFERENCES camera(id) ON DELETE CASCADE,
+    track_key       text NOT NULL,     -- run id + tracker id: unique per worker run
+    epoch           integer NOT NULL DEFAULT 0,
+    vehicle_class   text,
+    frames          integer,
+    first_pts_ms    numeric,
+    last_pts_ms     numeric,
+    first_seen_at   timestamptz,
+    last_seen_at    timestamptz,
+    created_at      timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (camera_id, track_key)
+);
+
+-- ------------------------------------------------------------ plate_read
+-- One row per *voted* plate, not per frame: the worker reads the plate on
+-- every frame of a track and votes across them, so a row here is already the
+-- combined answer. reads/agreeing_reads keep the evidence behind it.
+CREATE TABLE IF NOT EXISTS plate_read (
+    id              bigserial PRIMARY KEY,
+    camera_id       integer NOT NULL REFERENCES camera(id) ON DELETE CASCADE,
+    track_id        bigint REFERENCES vehicle_track(id) ON DELETE CASCADE,
+    plate           text NOT NULL,
+    confidence      numeric,
+    reads           integer,
+    agreeing_reads  integer,
+    valid_format    boolean,
+    repaired        boolean,
+    -- usable = valid Indian format AND corroborated by more than one frame.
+    -- Everything else is kept, flagged, and left out of route reconstruction.
+    usable          boolean,
+    vehicle_class   text,
+    plate_width_px  numeric,
+    char_height_px  numeric,
+    epoch           integer,
+    pts_ms          numeric,        -- media timestamp of the best read
+    observed_at     timestamptz NOT NULL,   -- media time mapped to wall clock
+    model           text,
+    source          text,
+    created_at      timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS plate_read_plate_idx ON plate_read (plate, observed_at DESC);
+CREATE INDEX IF NOT EXISTS plate_read_camera_idx ON plate_read (camera_id, observed_at DESC);
+CREATE INDEX IF NOT EXISTS plate_read_usable_idx ON plate_read (usable, observed_at DESC);
+
 -- ------------------------------------------------------------------ audit_log
 -- Every read of camera data is purpose-bound: queries carry an FIR/DD
 -- reference. Append-only by convention here; enforced by grants in deployment.

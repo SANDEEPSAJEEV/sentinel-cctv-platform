@@ -131,6 +131,19 @@ class SentinelCapture:
         self.epoch = 0
         self.reconnects = 0
         self.decode_warnings = 0
+        self._reconnect_requested = False
+
+    def request_reconnect(self, reason: str = "") -> None:
+        """Drop the connection and rejoin at the next frame.
+
+        The only way back from a decoder that has lost sync: it keeps emitting
+        frames built on references that never arrived, and no amount of waiting
+        fixes that if the stream's next IDR is minutes away. Callers use this
+        when frame *content* goes bad while frames keep arriving.
+        """
+        self._reconnect_requested = True
+        if reason:
+            log.info("%s: reconnect requested (%s)", self.safe_url, reason)
 
     @property
     def safe_url(self) -> str:
@@ -273,3 +286,10 @@ class SentinelCapture:
                     gap_ms=gap_ms,
                 )
                 index += 1
+
+                if self._reconnect_requested:
+                    self._reconnect_requested = False
+                    self.close()
+                    self.reconnects += 1
+                    time.sleep(self.backoff_start)
+                    break
