@@ -1,0 +1,25 @@
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: sentinel-mediamtx
+    ports:
+      - "8554:8554"   # RTSP        — same port as the Sentinel grid
+      - "8888:8888"   # HLS
+      - "8889:8889"   # WebRTC / WHEP
+      - "9997:9997"   # MediaMTX control API (local only; do NOT call the real one)
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml:ro
+    restart: unless-stopped
+
+  publisher:
+    image: linuxserver/ffmpeg:latest
+    container_name: sentinel-publisher
+    depends_on:
+      - mediamtx
+    entrypoint: ["/bin/sh", "/publish.sh"]
+    volumes:
+      - ./publish.sh:/publish.sh:ro
+      - ./media:/media:ro
+    environment:
+      - RTSP_HOST=mediamtx
+    restart: unless-stopped

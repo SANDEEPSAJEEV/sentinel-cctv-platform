@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.env
+media/*
+!media/PUT_TEST_CLIPS_HERE.txt
+capability_report.json
+*.log
+out/
+env/

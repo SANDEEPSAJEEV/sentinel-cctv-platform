@@ -1,0 +1,11 @@
+requests>=2.31
+opencv-python>=4.9
+numpy>=1.26
+fastapi>=0.110
+uvicorn>=0.29
+httpx>=0.27
+# plate detection (optional but needed for capability grading):
+#   pip install open-image-models[onnx]      # CPU
+#   pip install open-image-models[onnx-gpu]  # CUDA
+# plate OCR — grades cameras on reads, not on detector boxes:
+fast-plate-ocr>=1.1

@@ -1,0 +1,32 @@
+# Minimal MediaMTX config for the local Sentinel replica.
+# Defaults already match the organiser's grid (RTSP 8554 / HLS 8888 / WHEP 8889);
+# this file only turns on what we need and keeps the logs readable.
+
+logLevel: info
+readTimeout: 10s
+writeTimeout: 10s
+
+# RTSP -------------------------------------------------------------------
+rtsp: yes
+rtspTransports: [tcp, udp]        # clients should still force TCP themselves
+rtspAddress: :8554
+
+# HLS --------------------------------------------------------------------
+hls: yes
+hlsAddress: :8888
+hlsVariant: lowLatency
+hlsAlwaysRemux: yes
+
+# WebRTC / WHEP ----------------------------------------------------------
+webrtc: yes
+webrtcAddress: :8889
+
+# Control API (local replica only — never call the organiser's) -----------
+api: yes
+apiAddress: :9997
+
+rtmp: no
+srt: no
+
+paths:
+  all_others:

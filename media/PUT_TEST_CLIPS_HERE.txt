@@ -1,0 +1,11 @@
+Drop 3-6 short video clips here (.mp4 / .mkv / .ts / .mov).
+
+publish.sh turns each one into a looping "live" camera on
+rtsp://localhost:8554/stream/1, /stream/2, ...
+
+Tips:
+  - use mixed resolutions (e.g. 1920x1080, 1280x720, 640x480)
+  - include ONE HEVC/H.265 file to exercise the mixed-codec path
+  - traffic/dashcam footage with visible plates is ideal for testing ANPR
+  - 30-120 seconds each is plenty; short clips loop often, which is good
+    because it exercises the loop-discontinuity handling
