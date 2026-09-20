@@ -25,6 +25,19 @@ webrtcAddress: :8889
 api: yes
 apiAddress: :9997
 
+# MediaMTX grants no API permission by default, so mock_catalogue.py gets 401.
+# Wide open is fine HERE: this container is the local sandbox and binds to
+# localhost only. Never copy this block to anything reachable.
+authInternalUsers:
+  - user: any
+    ips: []
+    permissions:
+      - action: publish
+      - action: read
+      - action: playback
+      - action: api
+      - action: metrics
+
 rtmp: no
 srt: no
 

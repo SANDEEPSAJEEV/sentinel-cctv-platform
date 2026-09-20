@@ -26,8 +26,10 @@ import httpx
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-MEDIAMTX_API = os.environ.get("MEDIAMTX_API", "http://localhost:9997")
-PUBLIC_HOST = os.environ.get("PUBLIC_HOST", "localhost")
+# 127.0.0.1, not localhost: httpx tries ::1 first and Docker's published ports
+# answer on IPv4 only, so "localhost" fails with "All connection attempts failed".
+MEDIAMTX_API = os.environ.get("MEDIAMTX_API", "http://127.0.0.1:9997")
+PUBLIC_HOST = os.environ.get("PUBLIC_HOST", "127.0.0.1")
 PORT = int(os.environ.get("PORT", "8080"))
 
 # Stand-ins for the five departments named in FAQ 39. Purely cosmetic locally,

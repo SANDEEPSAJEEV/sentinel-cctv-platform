@@ -5,10 +5,14 @@
 #   /media/*.mp4|mkv|ts  ->  rtsp://$RTSP_HOST:8554/stream/<n>
 #
 # -re          pace at real time (one second of video per second)
-# -stream_loop -1   loop forever, which reproduces the hard scene cut the
-#                   organiser warns about at the loop point
 # -c copy      no re-encode, so the original codec is preserved: put one HEVC
 #              file in ./media to exercise the mixed H.264/H.265 path
+#
+# Looping: ffmpeg is restarted for each pass rather than using -stream_loop -1.
+# -stream_loop keeps PTS monotonic across the loop, so a client never sees the
+# discontinuity; restarting reproduces the publisher-restart behaviour the real
+# grid shows (session ends, client reconnects, PTS restarts near zero).
+# NOTE: the PTS-steps-backwards variant of a loop is NOT reproduced locally.
 
 RTSP_HOST="${RTSP_HOST:-mediamtx}"
 
@@ -27,10 +31,10 @@ for f in /media/*; do
   (
     while true; do
       ffmpeg -hide_banner -loglevel warning \
-             -re -stream_loop -1 -i "$f" \
+             -re -i "$f" \
              -an -c copy \
              -f rtsp -rtsp_transport tcp "$url"
-      echo "[publisher] stream/${n} died, restarting in 2s"
+      echo "[publisher] stream/${n} reached the loop point, restarting in 2s"
       sleep 2
     done
   ) &
