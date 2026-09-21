@@ -388,6 +388,87 @@ def verify_evidence(code: str, verified: bool = Body(True, embed=True),
     return {"code": code, "evidence_verified": verified}
 
 
+# -------------------------------------------------------- watchlist/alerts
+@app.get("/api/watchlist")
+def list_watchlist(active_only: bool = True) -> list[dict[str, Any]]:
+    return db.query(
+        f"""SELECT id, plate, category, severity, reason, source_system, source_ref,
+                   added_by, valid_from, valid_until, active, created_at
+            FROM watchlist {'WHERE active' if active_only else ''}
+            ORDER BY severity, plate""")
+
+
+@app.post("/api/watchlist", status_code=201)
+def add_watchlist(entry: dict[str, Any] = Body(...),
+                  x_purpose_ref: str | None = Header(None)) -> dict[str, Any]:
+    """Add one registration. source_ref should be the FIR/DD number that
+    justifies it — an entry nobody can trace back to a case is how a watchlist
+    turns into a standing order to stop people."""
+    from watchlist.sources import ManualSource, WatchlistEntry, load
+    from datetime import date
+
+    if not entry.get("plate"):
+        raise HTTPException(400, "plate is required")
+    try:
+        record = WatchlistEntry(
+            plate=entry["plate"],
+            category=entry.get("category") or "bolo",
+            severity=entry.get("severity") or "medium",
+            reason=entry.get("reason"),
+            source_ref=entry.get("source_ref") or x_purpose_ref,
+            added_by=entry.get("added_by"),
+            valid_until=date.fromisoformat(entry["valid_until"]) if entry.get("valid_until") else None,
+        )
+        written = load(ManualSource([record]), added_by=entry.get("added_by"))
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+    return {"written": written, "plate": record.normalised()}
+
+
+@app.delete("/api/watchlist/{entry_id}")
+def deactivate_watchlist(entry_id: int, x_purpose_ref: str | None = Header(None)) -> dict[str, Any]:
+    """Withdraw an entry. Rows are deactivated, not deleted: why a vehicle was
+    once circulated is part of the audit trail."""
+    n = db.execute("UPDATE watchlist SET active = false WHERE id = %s", (entry_id,))
+    if not n:
+        raise HTTPException(404, f"no watchlist entry {entry_id}")
+    db.audit("watchlist_withdraw", actor="api", object_type="watchlist",
+             object_id=str(entry_id), purpose_ref=x_purpose_ref)
+    return {"id": entry_id, "active": False}
+
+
+@app.get("/api/alerts")
+def list_alerts(limit: int = 50, include_closed: bool = False) -> list[dict[str, Any]]:
+    from watchlist.engine import open_alerts
+
+    return open_alerts(limit=limit, include_closed=include_closed)
+
+
+@app.post("/api/alerts/scan")
+def scan_alerts(after_id: int = 0) -> dict[str, Any]:
+    """Check plate reads against the watchlist. The worker can call this, or a
+    sidecar process can poll it; either way the matching logic lives in one
+    place."""
+    from watchlist.engine import scan
+
+    alerts, last = scan(after_id)
+    return {"raised": [a.as_dict() for a in alerts], "cursor": last}
+
+
+@app.post("/api/alerts/{alert_id}/status")
+def update_alert(alert_id: int, payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    from watchlist.engine import set_status
+
+    status = payload.get("status", "acknowledged")
+    try:
+        ok = set_status(alert_id, status, by=payload.get("by"), note=payload.get("note"))
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+    if not ok:
+        raise HTTPException(404, f"no alert {alert_id}")
+    return {"id": alert_id, "status": status}
+
+
 # ------------------------------------------------------------------ routes
 @app.get("/api/routes/{plate}")
 def route_for_plate(

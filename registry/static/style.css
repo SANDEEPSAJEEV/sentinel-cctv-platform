@@ -66,6 +66,24 @@ button { cursor: pointer; }
 button:hover { border-color: var(--accent); }
 
 .count { color: var(--ink-dim); font-weight: 400; }
+.alerts { list-style: none; margin: 0 0 6px; padding: 0; }
+.alerts li {
+  border: 1px solid var(--line); border-left-width: 3px; border-radius: 6px;
+  padding: 6px 8px; margin-bottom: 6px; background: var(--panel-2); font-size: 12px;
+}
+.alerts li.critical { border-left-color: var(--bad); }
+.alerts li.high { border-left-color: var(--observe); }
+.alerts li.medium { border-left-color: var(--recognise); }
+.alerts li.low { border-left-color: var(--detect); }
+.alerts .top { display: flex; justify-content: space-between; gap: 6px; align-items: baseline; }
+.alerts .plate { font-weight: 600; letter-spacing: .04em; cursor: pointer; }
+.alerts .plate:hover { color: var(--accent); text-decoration: underline; }
+.alerts .pri { color: var(--ink-dim); font-size: 11px; }
+.alerts .where { color: var(--ink-dim); }
+.alerts .verify { color: var(--observe); display: block; margin-top: 2px; }
+.alerts .acts { display: flex; gap: 5px; margin-top: 5px; }
+.alerts .acts button { padding: 2px 8px; font-size: 11px; width: auto; }
+.alerts .empty { color: var(--ink-dim); border: none; background: none; padding: 0; }
 .row { display: flex; gap: 6px; }
 .row button { flex: 1; }
 .route-summary { margin: 8px 0 4px; font-size: 12px; color: var(--ink-dim); }

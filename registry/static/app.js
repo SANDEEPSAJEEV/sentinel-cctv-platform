@@ -314,6 +314,57 @@ function runsTable(runs) {
   </table>`;
 }
 
+/* ----------------------------------------------------------------- alerts */
+async function loadAlerts() {
+  let alerts;
+  try {
+    alerts = await api("/api/alerts?limit=12");
+  } catch {
+    $("#alerts").innerHTML = '<li class="empty">alerts unavailable</li>';
+    return;
+  }
+  $("#alert-count").textContent = alerts.length ? `(${alerts.length} open)` : "";
+  if (!alerts.length) {
+    $("#alerts").innerHTML = '<li class="empty">No open alerts.</li>';
+    return;
+  }
+  $("#alerts").innerHTML = alerts.map((a) => `
+    <li class="${a.severity}" data-id="${a.id}">
+      <div class="top">
+        <span class="plate" data-plate="${escapeHtml(a.plate_wanted)}"
+              title="Trace this registration">${escapeHtml(a.plate_wanted)}</span>
+        <span class="pri">${a.severity} · priority ${a.priority}</span>
+      </div>
+      <div class="where">read ${escapeHtml(a.plate_read)} at
+        ${escapeHtml(a.camera_name || a.camera_code || "unknown camera")}
+        · ${new Date(a.last_seen_at).toLocaleString()}
+        ${a.hit_count > 1 ? ` · ${a.hit_count} sightings` : ""}</div>
+      ${a.needs_verification
+        ? '<span class="verify">Fuzzy plate match — a lead, not a confirmation. Verify the crop before acting.</span>'
+        : ""}
+      <div class="acts">
+        <button data-act="acknowledged">Acknowledge</button>
+        <button data-act="dismissed">Dismiss</button>
+      </div>
+    </li>`).join("");
+
+  $("#alerts").querySelectorAll(".plate").forEach((el) =>
+    el.addEventListener("click", () => {
+      $("#r-plate").value = el.dataset.plate;
+      traceRoute();
+    }));
+  $("#alerts").querySelectorAll(".acts button").forEach((btn) =>
+    btn.addEventListener("click", async () => {
+      const id = btn.closest("li").dataset.id;
+      await api(`/api/alerts/${id}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: btn.dataset.act, by: "operator (demo)" }),
+      });
+      loadAlerts();
+    }));
+}
+
 /* ------------------------------------------------------------------ route */
 async function traceRoute() {
   const plate = $("#r-plate").value.trim().toUpperCase();
@@ -455,7 +506,9 @@ function resize() {
   await loadFilters();
   resize();
   installMapControls();
-  await Promise.all([loadStats(), loadCameras()]);
+  await Promise.all([loadStats(), loadCameras(), loadAlerts()]);
+  // An operator's queue should not need a page refresh to be current.
+  setInterval(loadAlerts, 15000);
 
   ["#f-q", "#f-department", "#f-grade", "#f-status", "#f-confidence", "#f-owner"]
     .forEach((sel) => $(sel).addEventListener("input", () => loadCameras()));

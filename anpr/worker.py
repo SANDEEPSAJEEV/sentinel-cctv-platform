@@ -236,6 +236,8 @@ def main() -> None:
     out.add_argument("--jsonl", default="out/plate_reads.jsonl")
     out.add_argument("--no-db", action="store_true", help="skip the PostgreSQL sink")
     out.add_argument("--redis", default=os.environ.get("REDIS_URL"))
+    out.add_argument("--alerts", action="store_true",
+                     help="check each read against the watchlist and raise alerts inline")
     out.add_argument("--quiet", action="store_true")
     args = ap.parse_args()
 
@@ -274,14 +276,31 @@ def main() -> None:
     last_epoch: int | None = None
     skipped = 0
 
+    alert_cursor = 0
+
     def emit(event: PlateEvent) -> None:
-        nonlocal emitted
+        nonlocal emitted, alert_cursor
         emitted += 1
         for sink in sinks:
             try:
                 sink.write(event)
             except Exception as exc:
                 log.error("sink %s failed: %r", type(sink).__name__, exc)
+
+        # Watchlist matching runs against the stored read, so it sees the same
+        # row an analyst would later — no second code path for "live" hits.
+        if args.alerts:
+            try:
+                from watchlist.engine import scan
+
+                raised, alert_cursor = scan(alert_cursor)
+                for a in raised:
+                    log.warning("ALERT %s: %s seen as %s on %s — %s, priority %d%s",
+                                a.alert_id, a.plate_wanted, a.plate_read, a.camera_code,
+                                a.severity, a.priority,
+                                " (needs verification)" if a.needs_verification else "")
+            except Exception as exc:
+                log.error("watchlist scan failed: %r", exc)
         mark = "OK " if event.usable else "?? "
         log.info("%s%-12s conf=%.2f reads=%d/%d %s width=%.0fpx %s",
                  mark, event.plate, event.confidence, event.agreeing_reads, event.reads,

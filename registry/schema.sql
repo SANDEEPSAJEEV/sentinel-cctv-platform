@@ -203,6 +203,69 @@ CREATE INDEX IF NOT EXISTS plate_read_plate_idx ON plate_read (plate, observed_a
 CREATE INDEX IF NOT EXISTS plate_read_camera_idx ON plate_read (camera_id, observed_at DESC);
 CREATE INDEX IF NOT EXISTS plate_read_usable_idx ON plate_read (usable, observed_at DESC);
 
+-- ------------------------------------------------------------- watchlist
+-- The representative watchlist. In deployment the rows arrive from VAHAN,
+-- SARTHI, eGujCop/CCTNS and the like through the adapters in watchlist/
+-- sources.py; source_system records which, so an operator can see where a
+-- claim came from and an integration can be swapped without touching alerts.
+--
+-- Entries expire. A stolen-vehicle circulation that is never withdrawn becomes
+-- a standing order to stop a citizen, so valid_until is part of the record and
+-- matching ignores anything outside its window.
+CREATE TABLE IF NOT EXISTS watchlist (
+    id              serial PRIMARY KEY,
+    plate           text NOT NULL,
+    category        text NOT NULL DEFAULT 'bolo'
+                    CHECK (category IN ('stolen', 'wanted', 'suspect', 'bolo',
+                                        'permit', 'test')),
+    severity        text NOT NULL DEFAULT 'medium'
+                    CHECK (severity IN ('critical', 'high', 'medium', 'low')),
+    reason          text,
+    source_system   text NOT NULL DEFAULT 'manual',
+    source_ref      text,                    -- FIR / DD / circulation number
+    added_by        text,
+    valid_from      date NOT NULL DEFAULT current_date,
+    valid_until     date,
+    active          boolean NOT NULL DEFAULT true,
+    created_at      timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (plate, source_ref)
+);
+
+CREATE INDEX IF NOT EXISTS watchlist_plate_idx ON watchlist (plate) WHERE active;
+
+-- ----------------------------------------------------------------- alert
+-- One row per (watchlist entry, camera) sighting burst. hit_count grows rather
+-- than the table: a looping sandbox — or a vehicle waiting at a signal — would
+-- otherwise raise the same alert dozens of times and bury the operator.
+CREATE TABLE IF NOT EXISTS alert (
+    id              bigserial PRIMARY KEY,
+    watchlist_id    integer NOT NULL REFERENCES watchlist(id) ON DELETE CASCADE,
+    plate_read_id   bigint REFERENCES plate_read(id) ON DELETE SET NULL,
+    camera_id       integer REFERENCES camera(id) ON DELETE SET NULL,
+    plate_wanted    text NOT NULL,
+    plate_read      text NOT NULL,
+    match_kind      text NOT NULL CHECK (match_kind IN ('exact', 'fuzzy')),
+    match_score     numeric,
+    severity        text NOT NULL,
+    priority        integer NOT NULL,
+    priority_reason text,
+    -- A fuzzy match means a plate that is one OCR-confusable character away.
+    -- It is a lead, never a confirmation: acting on it stops the wrong driver.
+    needs_verification boolean NOT NULL DEFAULT false,
+    status          text NOT NULL DEFAULT 'new'
+                    CHECK (status IN ('new', 'acknowledged', 'dismissed', 'escalated')),
+    hit_count       integer NOT NULL DEFAULT 1,
+    first_seen_at   timestamptz NOT NULL,
+    last_seen_at    timestamptz NOT NULL,
+    raised_at       timestamptz NOT NULL DEFAULT now(),
+    acknowledged_at timestamptz,
+    acknowledged_by text,
+    note            text
+);
+
+CREATE INDEX IF NOT EXISTS alert_open_idx ON alert (status, priority DESC, last_seen_at DESC);
+CREATE INDEX IF NOT EXISTS alert_watch_camera_idx ON alert (watchlist_id, camera_id, last_seen_at DESC);
+
 -- ------------------------------------------------------------------ audit_log
 -- Every read of camera data is purpose-bound: queries carry an FIR/DD
 -- reference. Append-only by convention here; enforced by grants in deployment.

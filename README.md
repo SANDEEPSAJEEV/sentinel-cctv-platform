@@ -166,6 +166,44 @@ self-hosted OSRM and the same code uses road distances instead.
 tagged `source='synthetic-demo'` and removable with `--purge`; real grid reads
 are never mixed with it.
 
+## Watchlist and alerts
+
+```bash
+python -m watchlist.cli load --csv watchlist/samples/representative.csv
+python -m watchlist.cli scan          # check every unseen read
+python -m watchlist.cli follow        # keep checking as reads arrive
+python -m anpr.worker --camera cam06 --seconds 60 --alerts   # or inline
+python -m watchlist.cli alerts
+```
+
+Three rules, each a rights decision as much as a technical one:
+
+- **A fuzzy match is a lead, never a confirmation.** Matching has to tolerate
+  OCR's confusions or it misses real hits — but a fuzzy hit on a stolen-vehicle
+  circulation means a citizen with a similar plate gets stopped. Those alerts
+  are raised at reduced priority, flagged `needs_verification`, and the
+  operator view says so in words: *"Fuzzy plate match — a lead, not a
+  confirmation. Verify the crop before acting."*
+- **Alerts deduplicate.** A vehicle at a signal is read repeatedly and the
+  sandbox replays the same pass every loop; repeats raise `hit_count` on the
+  open alert instead of filling the queue. `SENTINEL_DEDUPE_MINUTES` widens the
+  window above the loop period when demonstrating against the sandbox.
+- **Watchlist entries expire.** Matching respects `valid_from`/`valid_until`,
+  so a circulation nobody withdrew stops generating stops. Withdrawal
+  deactivates rather than deletes: why a vehicle was circulated is audit trail.
+
+Priority is 1–100 from severity, adjusted by evidence — exact vs fuzzy match,
+corroborated vs single read, the camera's capability grade, the plate's pixel
+width — and every alert stores the sentence explaining how it got its number.
+
+`watchlist/sources.py` holds the integration adapters. Manual and CSV work.
+**VAHAN and eGujCop/CCTNS are designed, not connected**: each declares its
+endpoint, authentication, request and response shape, refresh cadence and what
+is still needed (NIC client certificate, GSWAN placement), and raises rather
+than returning fabricated or silently empty data. AFIS and NAFIS are
+fingerprint systems and carry no vehicle data, so they are out of scope for
+this watchlist and belong to the person side of an investigation.
+
 ## Pre-submission checklist (from the organiser's Resources page)
 
 - [x] Every client forces RTSP over TCP

@@ -1,0 +1,6 @@
+plate,category,severity,reason,source_system,source_ref,valid_from,valid_until
+GJ01DM4242,stolen,critical,Vehicle reported stolen; circulation raised by Navrangpura PS,representative,FIR/2026/0142,2026-09-15,2026-12-31
+GJ32AG2883,wanted,high,Wanted in connection with an ongoing enquiry,representative,DD/2026/0871,2026-09-01,2026-11-30
+GJ18AB1010,suspect,medium,Seen near three reported incidents; observation only,representative,OBS/2026/0033,2026-09-10,2026-10-15
+GJ05CD7788,permit,low,Commercial permit expired; flag for RTO check,representative,RTO/2026/0456,2026-08-01,2026-10-31
+MH12XY0001,bolo,high,Out-of-state vehicle of interest to the district crime branch,representative,BOLO/2026/0009,2026-09-05,2026-10-05
