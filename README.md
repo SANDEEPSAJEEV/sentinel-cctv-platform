@@ -129,6 +129,43 @@ forbid this kind of load and police networks are egress-restricted, so it
 renders offline from a plain SVG projection. Self-hosted tiles drop in behind
 the markers without touching the rest of the UI.
 
+## Route reconstruction — the graded test case
+
+A registration goes in, a timestamped location-wise route comes out.
+
+```bash
+python -m routes.cli GJ01DM4242 --purpose FIR/2026/0142 --json out/route.json
+curl -H "X-Purpose-Ref: FIR/2026/0142" localhost:8090/api/routes/GJ01DM4242
+# or trace it from the map UI
+```
+
+Four things it does that ordering sightings by time does not:
+
+- **Matches the way OCR actually fails.** Reads off this grid differ from the
+  true plate in exactly the characters OCR confuses (O/0, I/1, B/8, S/5). An
+  exact-match query answers "never seen" for a vehicle that was seen four
+  times, so matching is confusion-aware and every sighting carries its match
+  kind and score. Fuzzy sightings are labelled in the report and drawn amber on
+  the map.
+- **Folds the loop.** The sandbox replays footage on a cycle, so the same
+  journey recurs. Passes with the same camera sequence collapse into one route
+  and the repeat count is reported as a loop artifact, not deleted.
+- **Checks the route is possible.** Implied speed comes from real distance over
+  real time. Over 150 km/h is flagged — unless the leg crosses a loop boundary,
+  where the clock restarts and any speed is meaningless.
+- **Carries its evidence.** Each sighting reports the camera's capability
+  grade, plate width in pixels, how many frames voted, and whether a second
+  frame corroborated it. A route built from single unconfirmed reads is
+  labelled weak, because it is.
+
+Distances are straight-line by default, which understates road distance and so
+keeps the impossible-journey check conservative. Set `OSRM_URL` to a
+self-hosted OSRM and the same code uses road distances instead.
+
+`python -m routes.demo_data --insert` adds a synthetic journey for testing,
+tagged `source='synthetic-demo'` and removable with `--purge`; real grid reads
+are never mixed with it.
+
 ## Pre-submission checklist (from the organiser's Resources page)
 
 - [x] Every client forces RTSP over TCP

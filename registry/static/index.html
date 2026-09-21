@@ -17,6 +17,17 @@
 
 <main>
   <aside class="panel filters">
+    <h2>Trace a vehicle</h2>
+    <label>Registration
+      <input id="r-plate" type="search" placeholder="GJ01DM4242" autocomplete="off"></label>
+    <label>Purpose (FIR / DD)
+      <input id="r-purpose" type="text" placeholder="FIR/2026/0142"></label>
+    <div class="row">
+      <button id="r-go" type="button">Trace route</button>
+      <button id="r-clear" type="button" hidden>Clear</button>
+    </div>
+    <div id="r-summary" class="route-summary"></div>
+
     <h2>Filter</h2>
     <label>Search <input id="f-q" type="search" placeholder="name, code, district"></label>
     <label>Department <select id="f-department"></select></label>

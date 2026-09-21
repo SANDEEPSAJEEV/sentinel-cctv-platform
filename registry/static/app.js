@@ -20,7 +20,7 @@ const GRADE_HELP = {
 // Gujarat bounding box, with a small margin.
 const BBOX = { minLon: 68.0, maxLon: 74.8, minLat: 20.0, maxLat: 24.9 };
 
-const state = { features: [], selected: null, view: null, size: { w: 800, h: 600 } };
+const state = { features: [], selected: null, view: null, size: { w: 800, h: 600 }, route: null };
 
 const $ = (sel) => document.querySelector(sel);
 const map = $("#map");
@@ -181,9 +181,30 @@ function renderMap() {
          </circle>
        </g>`);
   }
+  if (state.route) parts.push(routeOverlay());
   map.innerHTML = parts.join("");
   map.querySelectorAll(".cam").forEach((el) =>
     el.addEventListener("click", () => select(el.dataset.code)));
+}
+
+/* The route drawn over the camera layer: dashed line between consecutive
+ * sightings, numbered stops, amber where the plate matched only fuzzily.
+ * Sightings at cameras with no confirmed location cannot be drawn — they stay
+ * in the timeline, and the gap in the line is the honest picture. */
+function routeOverlay() {
+  const stops = state.route.sightings.filter((s) => s.lat != null && s.lon != null);
+  if (!stops.length) return "";
+  const pts = stops.map((s) => project(s.lon, s.lat));
+  const path = pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
+  const marks = stops.map((s, i) => {
+    const [x, y] = pts[i];
+    return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)})">
+      <circle class="route-stop ${s.match_kind}" r="9"></circle>
+      <text class="route-num" y="3">${i + 1}</text>
+      <title>${escapeHtml(s.camera_name)} — ${new Date(s.observed_at).toLocaleString()}
+${escapeHtml(s.plate_read)} (${s.match_kind})</title></g>`;
+  }).join("");
+  return `<path class="route-line" d="${path}"></path>${marks}`;
 }
 
 function colorFor(grade) {
@@ -293,6 +314,81 @@ function runsTable(runs) {
   </table>`;
 }
 
+/* ------------------------------------------------------------------ route */
+async function traceRoute() {
+  const plate = $("#r-plate").value.trim().toUpperCase();
+  if (!plate) return;
+  const purpose = $("#r-purpose").value.trim();
+  $("#r-summary").textContent = "tracing…";
+  let route;
+  try {
+    route = await api(`/api/routes/${encodeURIComponent(plate)}`, {
+      headers: purpose ? { "X-Purpose-Ref": purpose } : {},
+    });
+  } catch (err) {
+    $("#r-summary").textContent = `trace failed: ${err.message}`;
+    return;
+  }
+  state.route = route;
+  $("#r-clear").hidden = false;
+  const s = route.summary;
+  const strength = (s.evidence_strength || "").split(" ")[0];
+  $("#r-summary").innerHTML = s.sightings
+    ? `<b>${s.sightings}</b> sighting(s) on <b>${s.cameras}</b> camera(s),
+       <b>${s.distance_km}</b> km${s.loop_repeats_folded
+        ? `, <b>${s.loop_repeats_folded}</b> loop repeat(s) folded` : ""}
+       <span class="strength ${strength}">${escapeHtml(s.evidence_strength)}</span>`
+    : "no sighting of this registration in the registry";
+  renderMap();
+  renderRoutePanel(route);
+}
+
+function renderRoutePanel(route) {
+  const s = route.summary;
+  const rows = route.sightings.map((sg, i) => `<tr>
+      <td>${i + 1}</td>
+      <td>${new Date(sg.observed_at).toLocaleString()}</td>
+      <td>${escapeHtml(sg.camera_name)}<br><span class="muted">${escapeHtml(sg.camera_code)}</span></td>
+      <td class="${sg.match_kind}">${escapeHtml(sg.plate_read)}<br>
+          <span class="muted">${sg.match_kind}</span></td>
+      <td>${sg.reads} read${sg.reads === 1 ? "" : "s"}${sg.usable ? "<br>corroborated" : ""}
+          ${sg.plate_width_px ? `<br><span class="muted">${Math.round(sg.plate_width_px)} px</span>` : ""}</td>
+    </tr>`).join("");
+
+  const legs = route.legs.map((l) => `<tr>
+      <td>${escapeHtml(l.from_camera.slice(-5))} → ${escapeHtml(l.to_camera.slice(-5))}</td>
+      <td>${Math.round(l.seconds / 60)} min</td>
+      <td>${l.km == null ? "—" : l.km + " km"}</td>
+      <td>${l.implied_kmh == null ? "—" : l.implied_kmh + " km/h"}</td>
+      <td class="leg-flag">${l.flags.join(", ") || ""}</td>
+    </tr>`).join("");
+
+  $("#detail").innerHTML = `
+    <h2>Route — ${escapeHtml(route.plate)}</h2>
+    <p class="muted">${s.first_seen ? `${new Date(s.first_seen).toLocaleString()} →
+       ${new Date(s.last_seen).toLocaleString()}` : "no sightings"}</p>
+    ${s.sightings ? `
+      <h3>Sightings</h3>
+      <table class="route"><tr><th>#</th><th>When</th><th>Camera</th><th>Read</th><th>Evidence</th></tr>
+        ${rows}</table>
+      ${legs ? `<h3>Legs</h3><table class="route">
+        <tr><th>Leg</th><th>Gap</th><th>Distance</th><th>Implied</th><th>Flags</th></tr>
+        ${legs}</table>` : ""}
+      <p class="muted" style="margin-top:8px">
+        <a href="/api/routes/${encodeURIComponent(route.plate)}/report" target="_blank">
+          plain-text report</a></p>` : ""}
+    ${route.notes?.length ? `<h3>Notes</h3><ul class="notes">${
+      route.notes.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul>` : ""}`;
+}
+
+function clearRoute() {
+  state.route = null;
+  $("#r-clear").hidden = true;
+  $("#r-summary").textContent = "";
+  $("#detail").innerHTML = '<h2>Camera</h2><p class="muted">Select a camera on the map or in the list.</p>';
+  renderMap();
+}
+
 /* --------------------------------------------------------------- worklist */
 async function showWorklist() {
   const wl = await api("/api/worklist");
@@ -369,5 +465,8 @@ function resize() {
     loadCameras();
   });
   $("#show-worklist").addEventListener("click", showWorklist);
+  $("#r-go").addEventListener("click", traceRoute);
+  $("#r-clear").addEventListener("click", clearRoute);
+  $("#r-plate").addEventListener("keydown", (e) => { if (e.key === "Enter") traceRoute(); });
   window.addEventListener("resize", resize);
 })();

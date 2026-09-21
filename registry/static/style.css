@@ -66,6 +66,26 @@ button { cursor: pointer; }
 button:hover { border-color: var(--accent); }
 
 .count { color: var(--ink-dim); font-weight: 400; }
+.row { display: flex; gap: 6px; }
+.row button { flex: 1; }
+.route-summary { margin: 8px 0 4px; font-size: 12px; color: var(--ink-dim); }
+.route-summary b { color: var(--ink); }
+.route-summary .strength { display: block; margin-top: 4px; }
+.route-summary .strength.weak, .route-summary .strength.mixed { color: var(--observe); }
+.route-summary .strength.strong { color: var(--identify); }
+.route-line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: 6 4;
+              opacity: .85; }
+.route-stop { fill: var(--accent); stroke: #0b1016; stroke-width: 1.5; }
+.route-stop.fuzzy { fill: var(--observe); }
+.route-num { fill: #0b1016; font-size: 9px; font-weight: 700; text-anchor: middle; }
+.leg-flag { color: var(--observe); }
+table.route { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.route th, table.route td { text-align: left; padding: 4px 5px;
+                                 border-bottom: 1px solid var(--line); vertical-align: top; }
+table.route th { color: var(--ink-dim); font-weight: 500; }
+table.route .fuzzy { color: var(--observe); }
+.notes { font-size: 12px; color: var(--ink-dim); margin-top: 10px; }
+.notes li { margin-bottom: 6px; }
 .list { list-style: none; margin: 0; padding: 0; }
 .list li {
   padding: 7px 8px; border-radius: 6px; cursor: pointer; border: 1px solid transparent;

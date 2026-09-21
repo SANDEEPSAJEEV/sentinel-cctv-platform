@@ -388,6 +388,67 @@ def verify_evidence(code: str, verified: bool = Body(True, embed=True),
     return {"code": code, "evidence_verified": verified}
 
 
+# ------------------------------------------------------------------ routes
+@app.get("/api/routes/{plate}")
+def route_for_plate(
+    plate: str,
+    since: str | None = None,
+    until: str | None = None,
+    tolerance: float = 1.0,
+    fold: bool = True,
+    corroborated_only: bool = False,
+    x_purpose_ref: str | None = Header(None),
+) -> dict[str, Any]:
+    """The graded test case: a registration in, a timestamped route out.
+
+    Send X-Purpose-Ref with the FIR/DD number — tracing a vehicle is the most
+    invasive thing this platform does, and the audit trail should say why.
+    """
+    from datetime import datetime
+
+    from routes.reconstruct import reconstruct
+
+    def when(v: str | None) -> Any:
+        if not v:
+            return None
+        try:
+            dt = datetime.fromisoformat(v)
+        except ValueError:
+            raise HTTPException(400, f"{v!r} is not an ISO timestamp")
+        return dt if dt.tzinfo else dt.astimezone()
+
+    route = reconstruct(plate, since=when(since), until=when(until), tolerance=tolerance,
+                        fold=fold, include_uncorroborated=not corroborated_only,
+                        purpose_ref=x_purpose_ref)
+    return route.as_dict()
+
+
+@app.get("/api/routes/{plate}/report")
+def route_report(plate: str, since: str | None = None, until: str | None = None,
+                 x_purpose_ref: str | None = Header(None)) -> Any:
+    """The same route as the plain-text report that goes in the submission."""
+    from fastapi.responses import PlainTextResponse
+
+    from routes.reconstruct import format_report, reconstruct
+
+    route = reconstruct(plate, purpose_ref=x_purpose_ref)
+    return PlainTextResponse(format_report(route))
+
+
+@app.get("/api/plates")
+def recent_plates(limit: int = 50, usable_only: bool = False) -> list[dict[str, Any]]:
+    """What has actually been read lately, newest first."""
+    return db.query(
+        f"""SELECT r.plate, r.observed_at, r.confidence, r.reads, r.valid_format,
+                   r.usable, r.plate_width_px, r.vehicle_class, r.source,
+                   c.code AS camera_code, c.name AS camera_name
+            FROM plate_read r JOIN camera c ON c.id = r.camera_id
+            {'WHERE r.usable' if usable_only else ''}
+            ORDER BY r.observed_at DESC LIMIT %s""",
+        (min(limit, 500),),
+    )
+
+
 # ------------------------------------------------------------------ health
 @app.get("/healthz")
 def healthz() -> JSONResponse:
