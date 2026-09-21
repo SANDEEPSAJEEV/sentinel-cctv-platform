@@ -318,6 +318,13 @@ First real run: **2026-09-19, home network**, RTSP. cam01–03 at 20 s, then two
 full sweeps (30 × 20 s; 30 × 40 s — the second cut off at cam22 by the
 watch-time quota, see §3). Crops in `out/` (gitignored; real plates).
 
+**Clean sweep 2026-09-21** (integrity gate active, 20 s/camera,
+`docs/capability_report_2026-09-21.json`): 29/30 reachable · grades
+**0 IDENTIFY, 1 RECOGNISE, 5 OBSERVE, 23 UNGRADED** · **0 ANPR-capable** ·
+plate widths 44–126 px on the 9 cameras that showed any plate · **8 cameras
+delivered corrupt frames and 4 (cam07, cam09, cam17, cam22) delivered no usable
+frame at all.** These are the numbers to quote; earlier sweeps are contaminated.
+
 **Grid-wide finding, eyes-on (the defensible version of the CCI headline):**
 across both sweeps, **legible plates appeared on only 3 of 30 cameras** —
 cam06 Timbavadi gate (EV and two-wheeler plates, 71–117 px), cam07 (one
